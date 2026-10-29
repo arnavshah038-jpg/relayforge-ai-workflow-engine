@@ -1,5 +1,7 @@
 # relayforge-ai-workflow-engine
 
+[![tests](https://github.com/arnavshah038-jpg/relayforge-ai-workflow-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/arnavshah038-jpg/relayforge-ai-workflow-engine/actions)
+
 A small backend for running multi-step workflows safely. Each workflow is saved in the database
 step by step, so a crash, a restart, a retried request or two workers at the same time don't
 cause duplicate side effects.
