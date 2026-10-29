@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RelayForge</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1c2330;--muted:#667085;--line:#e3e6eb;--accent:#4f46e5;--on:#fff;--ok:#12805c;--okbg:#e3f6ee;--warn:#9a6700;--warnbg:#fff4d6;--bad:#b42318;--badbg:#fde8e6;--info:#1d5fd1;--infobg:#e6efff;--idle:#475467;--idlebg:#eef0f3}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1318;--card:#171c24;--text:#e6e9ef;--muted:#98a2b3;--line:#2a313c;--accent:#8b91ff;--on:#0f1318;--ok:#4ade9d;--okbg:#10301f;--warn:#f5c451;--warnbg:#3a2e0d;--bad:#ff8a80;--badbg:#3d1714;--info:#7fb0ff;--infobg:#13284a;--idle:#b0b8c5;--idlebg:#222a35}}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{display:flex;align-items:center;gap:12px;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--line)}
+header b{font-size:16px}header .sp{flex:1}.muted{color:var(--muted)}.small{font-size:12px}
+main{max-width:1100px;margin:20px auto;padding:0 16px}
+#app{display:grid;grid-template-columns:minmax(300px,400px) 1fr;gap:16px;align-items:start}
+@media(max-width:800px){#app{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.narrow{max-width:380px;margin:40px auto}
+h2{font-size:14px;margin:0 0 12px}h3{font-size:13px;margin:16px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+input,textarea,select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--text);font:inherit}
+textarea{min-height:80px;resize:vertical}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:7px;padding:7px 12px}
+button.pri{background:var(--accent);color:var(--on);border-color:var(--accent);font-weight:600}
+button.bad{color:var(--bad);border-color:var(--bad)}button:disabled{opacity:.5;cursor:default}
+.row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.tabs{display:flex;gap:6px;margin-bottom:8px}.tab.on{background:var(--accent);color:var(--on);border-color:var(--accent)}
+.item{display:flex;gap:10px;align-items:center;padding:9px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;cursor:pointer}
+.item:hover,.item.sel{border-color:var(--accent)}.item .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.s-completed{color:var(--ok);background:var(--okbg)}.s-waiting_approval{color:var(--warn);background:var(--warnbg)}
+.s-running{color:var(--info);background:var(--infobg)}.s-pending{color:var(--idle);background:var(--idlebg)}
+.s-failed,.s-rejected{color:var(--bad);background:var(--badbg)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}.chip{background:var(--idlebg);color:var(--idle);padding:2px 9px;border-radius:6px;font-size:12px}
+.quote{white-space:pre-wrap;background:var(--bg);border-left:3px solid var(--line);padding:8px 12px;border-radius:4px}
+.step{display:flex;gap:8px;align-items:center;padding:4px 0}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--idle)}.dot.done{background:var(--ok)}.dot.failed{background:var(--bad)}.dot.running{background:var(--info)}
+.tl{border-left:2px solid var(--line);margin-left:4px;padding-left:14px}
+.ev{position:relative;padding:0 0 12px}.ev:before{content:"";position:absolute;left:-20px;top:6px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw}
+#toast.show{opacity:1}#toast.bad{background:var(--bad);color:#fff}
+</style>
+</head>
+<body>
+<header>
+  <b>RelayForge</b><span class="muted small">AI workflow engine</span><span class="sp"></span>
+  <span id="who" class="small"></span><button id="logout" hidden>Log out</button>
+</header>
+
+<main id="auth">
+  <div class="card narrow">
+    <div class="tabs"><button class="tab on" data-t="login">Log in</button><button class="tab" data-t="signup">New company</button></div>
+    <form id="login">
+      <label>Email</label><input name="email" type="email" required autocomplete="username">
+      <label>Password</label><input name="password" type="password" required autocomplete="current-password">
+      <div class="row"><button class="pri">Log in</button></div>
+    </form>
+    <form id="signup" hidden>
+      <label>Company name</label><input name="company_name" required minlength="2">
+      <label>Admin email</label><input name="email" type="email" required>
+      <label>Password (8+ characters)</label><input name="password" type="password" required minlength="8">
+      <div class="row"><button class="pri">Create company</button></div>
+    </form>
+    <div id="demoBox"></div>
+  </div>
+</main>
+
+<main id="app" hidden>
+  <section>
+    <div class="card">
+      <h2>New ticket</h2>
+      <form id="ticket">
+        <label>Customer email</label><input name="customer_email" type="email" required>
+        <label>Subject</label><input name="subject" required maxlength="200">
+        <label>Message</label><textarea name="body" required maxlength="5000"></textarea>
+        <div class="row">
+          <button class="pri">Send ticket</button>
+          <button type="button" data-ex="refund">Refund example</button>
+          <button type="button" data-ex="plain">Other example</button>
+        </div>
+        <p class="muted small">Each send gets its own Idempotency-Key, so a double click never creates two workflows.</p>
+      </form>
+    </div>
+    <div class="card" id="teamCard" hidden>
+      <h2>Add a team member</h2>
+      <form id="team">
+        <label>Email</label><input name="email" type="email" required>
+        <label>Password</label><input name="password" type="password" required minlength="8">
+        <label>Role</label><select name="role"><option>agent</option><option>manager</option><option>admin</option></select>
+        <div class="row"><button class="pri">Add</button></div>
+      </form>
+    </div>
+    <div class="card"><h2>Workflows</h2><div id="list"></div></div>
+  </section>
+  <section><div class="card" id="detail"><p class="muted">Pick a workflow from the list, or send a ticket.</p></div></section>
+</main>
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const store = {
+  get() { try { return sessionStorage.getItem("rf_token"); } catch { return null; } },
+  set(v) { try { v ? sessionStorage.setItem("rf_token", v) : sessionStorage.removeItem("rf_token"); } catch {} }
+};
+let token = store.get(), me = null, selected = null, busy = false;
+
+// builds DOM nodes with textContent only, ticket text is never parsed as HTML
+function h(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (k === "class") e.className = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (v !== false && v != null) e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(String(c)));
+  return e;
+}
+function toast(msg, bad) {
+  const t = $("#toast"); t.textContent = msg; t.className = "show" + (bad ? " bad" : "");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.className = "", 3500);
+}
+const when = iso => iso ? new Date(iso).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit", second: "2-digit"}) : "";
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now() + "-" + Math.random().toString(36).slice(2));
+const label = s => s.replace(/_/g, " ");
+
+async function api(path, opts = {}) {
+  const headers = {"content-type": "application/json"};
+  if (token) headers.authorization = "Bearer " + token;
+  const r = await fetch(path, {...opts, headers: {...headers, ...(opts.headers || {})}});
+  let data = null; try { data = await r.json(); } catch {}
+  if (r.status === 401 && token && !path.startsWith("/auth/login")) { logout(); throw new Error("Session expired, please log in again"); }
+  if (!r.ok) {
+    const d = data && data.detail;
+    throw new Error(Array.isArray(d) ? d.map(x => x.msg).join(", ") : typeof d === "string" ? d : "Error " + r.status);
+  }
+  return data;
+}
+const post = (path, body, headers) => api(path, {method: "POST", body: JSON.stringify(body || {}), headers});
+
+function logout() {
+  token = null; me = null; selected = null; store.set(null);
+  $("#auth").hidden = false; $("#app").hidden = true; $("#logout").hidden = true; $("#who").textContent = "";
+}
+async function start() {
+  try { me = await api("/auth/me"); } catch { return logout(); }
+  $("#auth").hidden = true; $("#app").hidden = false; $("#logout").hidden = false;
+  $("#who").textContent = me.email + " (" + me.role + ")";
+  $("#teamCard").hidden = me.role !== "admin";
+  await refresh();
+}
+async function doLogin(email, password) {
+  const t = await post("/auth/login", {email, password});
+  token = t.access_token; store.set(token); await start();
+}
+
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x === b));
+  $("#login").hidden = b.dataset.t !== "login"; $("#signup").hidden = b.dataset.t !== "signup";
+});
+$("#login").onsubmit = async e => {
+  e.preventDefault(); const f = new FormData(e.target);
+  try { await doLogin(f.get("email"), f.get("password")); } catch (x) { toast(x.message, true); }
+};
+$("#signup").onsubmit = async e => {
+  e.preventDefault(); const f = new FormData(e.target);
+  try {
+    await post("/auth/signup", {company_name: f.get("company_name"), email: f.get("email"), password: f.get("password")});
+    await doLogin(f.get("email"), f.get("password"));
+  } catch (x) { toast(x.message, true); }
+};
+$("#logout").onclick = logout;
+
+const examples = {
+  refund: ["ravi@example.com", "Refund", "Charged twice, please refund Rs 2000 for order 1042"],
+  plain: ["sita@example.com", "Forgot my password", "I cannot login to my account."]
+};
+document.querySelectorAll("[data-ex]").forEach(b => b.onclick = () => {
+  const f = $("#ticket"), ex = examples[b.dataset.ex];
+  f.elements.customer_email.value = ex[0]; f.elements.subject.value = ex[1]; f.elements.body.value = ex[2];
+});
+$("#ticket").onsubmit = async e => {
+  e.preventDefault(); const f = e.target;
+  try {
+    const wf = await post("/workflows", {customer_email: f.elements.customer_email.value, subject: f.elements.subject.value, body: f.elements.body.value},
+                          {"Idempotency-Key": uid()});
+    f.elements.subject.value = ""; f.elements.body.value = ""; selected = wf.id; toast("Ticket #" + wf.id + " sent");
+    setTimeout(refresh, 400); await refresh();
+  } catch (x) { toast(x.message, true); }
+};
+$("#team").onsubmit = async e => {
+  e.preventDefault(); const f = e.target;
+  try { const u = await post("/auth/users", {email: f.elements.email.value, password: f.elements.password.value, role: f.elements.role.value});
+        toast("Added " + u.email + " as " + u.role); f.reset(); } catch (x) { toast(x.message, true); }
+};
+
+async function refresh() {
+  if (!token || busy) return; busy = true;
+  try {
+    const page = await api("/workflows?limit=30");
+    const list = $("#list"); list.replaceChildren();
+    if (!page.items.length) list.append(h("p", {class: "muted"}, "No workflows yet."));
+    for (const wf of page.items) {
+      list.append(h("div", {class: "item" + (wf.id === selected ? " sel" : ""), onclick: () => { selected = wf.id; refresh(); }},
+        h("span", {class: "muted"}, "#" + wf.id), h("span", {class: "t"}, wf.input.subject),
+        h("span", {class: "badge s-" + wf.status}, label(wf.status))));
+    }
+    if (selected) await detail();
+  } catch (x) { if (token) toast(x.message, true); } finally { busy = false; }
+}
+
+const nice = {workflow_created: "Ticket received", workflow_started: "Started", step_done: "Step finished", step_retry: "Step failed, retrying",
+  step_failed: "Step gave up", approval_requested: "Waiting for a manager", approved: "Approved", rejected: "Rejected",
+  retried: "Retried by a manager", workflow_completed: "Completed", workflow_failed: "Workflow failed"};
+
+async function detail() {
+  const [wf, trail] = await Promise.all([api("/workflows/" + selected), api("/workflows/" + selected + "/audit")]);
+  const a = (wf.steps.find(s => s.name === "analyze") || {}).output;
+  const canAct = me.role === "manager" || me.role === "admin";
+  const act = async (kind) => {
+    let body = {};
+    if (kind === "reject") { const r = prompt("Reason (optional)"); if (r === null) return; body = r ? {reason: r} : {}; }
+    try { await post("/workflows/" + wf.id + "/" + kind, body); toast("Done: " + kind); setTimeout(refresh, 700); await refresh(); }
+    catch (x) { toast(x.message, true); }
+  };
+  const d = $("#detail"); d.replaceChildren(h("div", {},
+    h("div", {class: "row", style: "margin:0 0 12px;align-items:center"},
+      h("h2", {style: "margin:0"}, "Workflow #" + wf.id), h("span", {class: "badge s-" + wf.status}, label(wf.status))),
+    h("div", {class: "muted small"}, "From " + wf.input.customer_email),
+    h("p", {style: "margin:8px 0 4px"}, h("b", {}, wf.input.subject)), h("div", {class: "quote"}, wf.input.body),
+    a && [h("h3", {}, "What the AI understood"),
+      h("div", {class: "chips"}, h("span", {class: "chip"}, "category: " + a.category), h("span", {class: "chip"}, "urgency: " + a.urgency),
+        h("span", {class: "chip"}, "action: " + a.action), a.refund_amount > 0 && h("span", {class: "chip"}, "refund: Rs " + a.refund_amount))],
+    wf.status === "waiting_approval" && h("div", {class: "card", style: "margin:16px 0 0;background:var(--warnbg)"},
+      h("b", {}, "A refund needs a manager's approval."),
+      h("p", {class: "small", style: "margin:4px 0 0"}, canAct ? "You cannot approve a ticket you sent yourself." : "Log in as a manager or admin to approve."),
+      canAct && h("div", {class: "row"}, h("button", {class: "pri", onclick: () => act("approve")}, "Approve refund"),
+                                         h("button", {class: "bad", onclick: () => act("reject")}, "Reject"))),
+    wf.status === "failed" && canAct && h("div", {class: "row"}, h("button", {class: "pri", onclick: () => act("retry")}, "Retry failed step")),
+    h("h3", {}, "Steps"),
+    wf.steps.map(s => h("div", {class: "step"}, h("span", {class: "dot " + s.status}), h("b", {}, s.name),
+      h("span", {class: "muted small"}, s.status + ", attempts: " + s.attempts), s.error && h("span", {class: "small", style: "color:var(--bad)"}, s.error))),
+    h("h3", {}, "History (audit log)"),
+    h("div", {class: "tl"}, trail.map(ev => {
+      const bits = ["step", "attempt", "amount", "reason", "error"].filter(k => ev.detail[k] != null).map(k => k + ": " + ev.detail[k]);
+      const who = ev.actor === "system" ? "system" : ev.actor === "user:" + me.id ? "you" : ev.actor.replace(":", " ");
+      return h("div", {class: "ev"}, h("div", {}, h("b", {}, nice[ev.event] || ev.event), h("span", {class: "muted small"}, "  " + when(ev.created_at) + " by " + who)),
+        bits.length > 0 && h("div", {class: "muted small"}, bits.join(", ")));
+    }))));
+}
+
+setInterval(() => { if (!document.hidden && token && me) refresh(); }, 3000);
+fetch("/config").then(r => r.json()).then(cfg => {
+  if (!cfg.signup_enabled) document.querySelector(".tabs").hidden = true;
+  if (cfg.demo_accounts && cfg.demo_accounts.length) {
+    $("#demoBox").replaceChildren(
+      h("p", {class: "small muted", style: "margin-top:16px"}, "Demo server: payments are simulated and data may be reset. Use a ready-made account:"),
+      h("div", {class: "row", style: "margin-top:0"}, cfg.demo_accounts.map(a =>
+        h("button", {type: "button", onclick: () => doLogin(a.email, a.password).catch(x => toast(x.message, true))}, a.label))));
+  }
+}).catch(() => {});
+if (token) start();
+</script>
+</body>
+</html>
